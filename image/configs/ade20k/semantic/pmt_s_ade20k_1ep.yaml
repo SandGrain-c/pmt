@@ -1,0 +1,37 @@
+# PMT-S (DINOv3 ViT-S/16 frozen) on ADE20K, short 1-epoch schedule for a single T4 (batch 8 -> 2526 steps).
+# Mask-annealing steps = official ADE20K schedule (pmt_l.yaml, ~20.2k steps) scaled by 2526/20208.
+trainer:
+  max_epochs: 1
+  logger:
+    class_path: lightning.pytorch.loggers.wandb.WandbLogger
+    init_args:
+      resume: allow
+      project: "pmt-hw"
+      name: ade20k_pmt_s_1ep
+model:
+  class_path: training.mask_classification_semantic.MaskClassificationSemantic
+  init_args:
+    attn_mask_annealing_enabled: True
+    attn_mask_annealing_start_steps: [0, 673, 925, 1178, 1430, 1683]
+    attn_mask_annealing_end_steps: [375, 1094, 1346, 1598, 1851, 2103]
+    lr: 2e-4
+    min_lr: 1e-9
+    warmup_steps: 300
+    network:
+      class_path: models.pmt.PMT
+      init_args:
+        num_q: 100
+        num_blocks: 6
+        hidden_dim: 384
+        interaction_indices: [2, 5, 8, 11]
+        encoder:
+          class_path: models.vit.ViT
+          init_args:
+            backbone_name: facebook/dinov3-vits16-pretrain-lvd1689m
+            frozen_encoder: True
+data:
+  class_path: datasets.ade20k_semantic.ADE20KSemantic
+  init_args:
+    num_workers: 3
+    num_classes: 150
+    img_size: [512, 512]
